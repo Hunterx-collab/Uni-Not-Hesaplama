@@ -9,16 +9,16 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-22.04
 
     steps:
       - name: Repositoryyi indir
         uses: actions/checkout@v5
 
-      - name: Python 3.12 kur
+      - name: Python 3.11 kur
         uses: actions/setup-python@v6
         with:
-          python-version: "3.12"
+          python-version: "3.11"
 
       - name: Java 17 kur
         uses: actions/setup-java@v5
@@ -30,64 +30,74 @@ jobs:
         run: |
           sudo apt update
           sudo apt install -y \
-            git zip unzip \
-            autoconf automake libtool pkg-config \
-            zlib1g-dev libncurses5-dev libncursesw5-dev \
-            cmake libffi-dev libssl-dev
+            git \
+            zip \
+            unzip \
+            autoconf \
+            automake \
+            libtool \
+            pkg-config \
+            zlib1g-dev \
+            libncurses5-dev \
+            libncursesw5-dev \
+            cmake \
+            libffi-dev \
+            libssl-dev
 
       - name: Android SDK kurulumu
         uses: android-actions/setup-android@v4
 
       - name: Android SDK paketlerini kur
         run: |
-          sdkmanager --update
-
           sdkmanager --install \
             "platform-tools" \
-            "platforms;android-35" \
+            "platforms;android-34" \
+            "build-tools;34.0.0" \
             "build-tools;35.0.0"
 
           yes | sdkmanager --licenses || true
 
-      - name: SDK içeriğini kontrol et
-        run: |
-          echo "===== ANDROID HOME ====="
-          echo "$ANDROID_HOME"
-
-          echo "===== BUILD TOOLS ====="
-          ls -la "$ANDROID_HOME/build-tools/" || true
-
-          echo "===== TÜM AIDL DOSYALARI ====="
-          find "$ANDROID_HOME" -type f -name "aidl" -print || true
-
-          echo "===== TÜM BUILD TOOLS ARAÇLARI ====="
-          find "$ANDROID_HOME/build-tools" -maxdepth 2 -type f -print || true
-
       - name: AIDL bul
         shell: bash
         run: |
-          AIDL_PATH=$(find "$ANDROID_HOME" -type f -name "aidl" | head -n 1)
+          echo "======================================"
+          echo "ANDROID SDK:"
+          echo "$ANDROID_HOME"
+          echo "======================================"
+
+          echo "Build Tools 34:"
+          ls -la "$ANDROID_HOME/build-tools/34.0.0/" || true
+
+          echo "Build Tools 35:"
+          ls -la "$ANDROID_HOME/build-tools/35.0.0/" || true
+
+          echo "======================================"
+          echo "AIDL DOSYALARI:"
+          echo "======================================"
+
+          find "$ANDROID_HOME/build-tools" -type f -name "aidl" -print
+
+          AIDL_PATH=$(find "$ANDROID_HOME/build-tools" -type f -name "aidl" | sort -V | tail -n 1)
 
           if [ -z "$AIDL_PATH" ]; then
-            echo "================================"
-            echo "AIDL BULUNAMADI"
-            echo "================================"
+            echo "AIDL BULUNAMADI!"
             exit 1
           fi
 
-          echo "AIDL bulundu:"
+          echo "======================================"
+          echo "AIDL BULUNDU:"
           echo "$AIDL_PATH"
+          echo "======================================"
 
           chmod +x "$AIDL_PATH"
 
-          AIDL_DIR=$(dirname "$AIDL_PATH")
-          echo "$AIDL_DIR" >> "$GITHUB_PATH"
+          echo "$(dirname "$AIDL_PATH")" >> "$GITHUB_PATH"
 
-      - name: AIDL kontrolü
+      - name: AIDL kontrol
         run: |
-          echo "PATH=$PATH"
           echo "AIDL konumu:"
           which aidl
+
           echo "AIDL sürümü:"
           aidl --version
 
