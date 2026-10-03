@@ -78,9 +78,32 @@ jobs:
 
       - name: APK oluştur
         run: |
-          buildozer -v android debug
+          set -o pipefail
+          buildozer android debug 2>&1 | tee build.log
+
+      - name: Build hatasını göster
+        if: failure()
+        run: |
+          echo "========================================"
+          echo "BUILD LOG SON 200 SATIR"
+          echo "========================================"
+          tail -n 200 build.log || true
+
+          echo "========================================"
+          echo "HATA SATIRLARI"
+          echo "========================================"
+          grep -i -E "error|exception|failed|failure|aidl|traceback" build.log | tail -n 100 || true
+
+      - name: Build logunu yükle
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Build-Log
+          path: build.log
+          if-no-files-found: ignore
 
       - name: APK'yı yükle
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: Uni-Not-Hesaplama-APK
