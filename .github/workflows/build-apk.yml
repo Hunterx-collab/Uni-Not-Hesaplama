@@ -1,4 +1,4 @@
-    name: Build Android APK
+name: Build Android APK
 
 on:
   workflow_dispatch:
@@ -12,8 +12,7 @@ jobs:
     runs-on: ubuntu-24.04
 
     steps:
-
-      - name: Repository'yi indir
+      - name: Repositoryyi indir
         uses: actions/checkout@v5
 
       - name: Python 3.12 kur
@@ -49,79 +48,47 @@ jobs:
         uses: android-actions/setup-android@v4
 
       - name: Android SDK araçlarını kur
-        shell: bash
         run: |
           sdkmanager --install \
-            "cmdline-tools;latest" \
             "platform-tools" \
             "platforms;android-35" \
             "build-tools;35.0.0"
-
           yes | sdkmanager --licenses || true
 
       - name: AIDL kontrolü
-        shell: bash
         run: |
-          echo "======================================"
           echo "ANDROID_HOME=$ANDROID_HOME"
-          echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT"
-          echo "======================================"
-
-          echo "Build Tools klasörü:"
-          ls -la "$ANDROID_HOME/build-tools/35.0.0/" || true
-
           echo "AIDL aranıyor..."
-          find "$ANDROID_HOME" -type f -name "aidl" -print
+          find "$ANDROID_HOME" -type f -name aidl -print
 
-          AIDL_PATH=$(find "$ANDROID_HOME" -type f -name "aidl" | head -n 1)
+          AIDL_PATH=$(find "$ANDROID_HOME" -type f -name aidl | head -n 1)
 
           if [ -z "$AIDL_PATH" ]; then
-            echo "======================================"
-            echo "HATA: AIDL BULUNAMADI!"
-            echo "======================================"
+            echo "AIDL BULUNAMADI"
             exit 1
           fi
 
-          echo "======================================"
-          echo "AIDL BULUNDU:"
-          echo "$AIDL_PATH"
-          echo "======================================"
-
+          echo "AIDL BULUNDU: $AIDL_PATH"
           chmod +x "$AIDL_PATH"
-
-          AIDL_DIR=$(dirname "$AIDL_PATH")
-
-          echo "$AIDL_DIR" >> "$GITHUB_PATH"
-          echo "$ANDROID_HOME/platform-tools" >> "$GITHUB_PATH"
+          echo "$(dirname "$AIDL_PATH")" >> "$GITHUB_PATH"
 
       - name: Android araçlarını kontrol et
-        shell: bash
         run: |
-          echo "PATH=$PATH"
-
-          echo "ADB:"
-          which adb || true
-
           echo "AIDL:"
           which aidl
-
-          echo "AIDL sürümü:"
           aidl --version
 
       - name: Python paketlerini kur
-        shell: bash
         run: |
           python -m pip install --upgrade pip
           pip install buildozer
           pip install "cython==0.29.34"
 
       - name: Buildozer spec oluştur
-        shell: bash
         run: |
           buildozer init
 
       - name: buildozer.spec ayarla
-        shell: bash
         run: |
           sed -i 's/^title = .*/title = Uni Not Hesaplama/' buildozer.spec
           sed -i 's/^package.name = .*/package.name = uninothesaplama/' buildozer.spec
@@ -130,20 +97,11 @@ jobs:
           sed -i 's/^requirements = .*/requirements = python3,kivy,kivymd/' buildozer.spec
           sed -i 's/^orientation = .*/orientation = portrait/' buildozer.spec
 
-          cat buildozer.spec
-
-      - name: Android SDK ve NDK yollarını ayarla
-        shell: bash
-        run: |
-          echo "ANDROIDSDK=$ANDROID_HOME" >> "$GITHUB_ENV"
-          echo "ANDROIDNDK=$ANDROID_HOME/ndk/25b" >> "$GITHUB_ENV"
-
       - name: APK oluştur
-        shell: bash
         run: |
           buildozer -v android debug
 
-      - name: APK'yı yükle
+      - name: APKyı yükle
         uses: actions/upload-artifact@v4
         with:
           name: Uni-Not-Hesaplama-APK
