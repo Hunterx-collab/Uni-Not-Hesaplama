@@ -30,52 +30,65 @@ jobs:
         run: |
           sudo apt update
           sudo apt install -y \
-            git \
-            zip \
-            unzip \
-            autoconf \
-            automake \
-            libtool \
-            pkg-config \
-            zlib1g-dev \
-            libncurses5-dev \
-            libncursesw5-dev \
-            cmake \
-            libffi-dev \
-            libssl-dev
+            git zip unzip \
+            autoconf automake libtool pkg-config \
+            zlib1g-dev libncurses5-dev libncursesw5-dev \
+            cmake libffi-dev libssl-dev
 
       - name: Android SDK kurulumu
         uses: android-actions/setup-android@v4
 
-      - name: Android SDK araçlarını kur
+      - name: Android SDK paketlerini kur
         run: |
+          sdkmanager --update
+
           sdkmanager --install \
             "platform-tools" \
             "platforms;android-35" \
             "build-tools;35.0.0"
+
           yes | sdkmanager --licenses || true
 
-      - name: AIDL kontrolü
+      - name: SDK içeriğini kontrol et
         run: |
-          echo "ANDROID_HOME=$ANDROID_HOME"
-          echo "AIDL aranıyor..."
-          find "$ANDROID_HOME" -type f -name aidl -print
+          echo "===== ANDROID HOME ====="
+          echo "$ANDROID_HOME"
 
-          AIDL_PATH=$(find "$ANDROID_HOME" -type f -name aidl | head -n 1)
+          echo "===== BUILD TOOLS ====="
+          ls -la "$ANDROID_HOME/build-tools/" || true
+
+          echo "===== TÜM AIDL DOSYALARI ====="
+          find "$ANDROID_HOME" -type f -name "aidl" -print || true
+
+          echo "===== TÜM BUILD TOOLS ARAÇLARI ====="
+          find "$ANDROID_HOME/build-tools" -maxdepth 2 -type f -print || true
+
+      - name: AIDL bul
+        shell: bash
+        run: |
+          AIDL_PATH=$(find "$ANDROID_HOME" -type f -name "aidl" | head -n 1)
 
           if [ -z "$AIDL_PATH" ]; then
+            echo "================================"
             echo "AIDL BULUNAMADI"
+            echo "================================"
             exit 1
           fi
 
-          echo "AIDL BULUNDU: $AIDL_PATH"
-          chmod +x "$AIDL_PATH"
-          echo "$(dirname "$AIDL_PATH")" >> "$GITHUB_PATH"
+          echo "AIDL bulundu:"
+          echo "$AIDL_PATH"
 
-      - name: Android araçlarını kontrol et
+          chmod +x "$AIDL_PATH"
+
+          AIDL_DIR=$(dirname "$AIDL_PATH")
+          echo "$AIDL_DIR" >> "$GITHUB_PATH"
+
+      - name: AIDL kontrolü
         run: |
-          echo "AIDL:"
+          echo "PATH=$PATH"
+          echo "AIDL konumu:"
           which aidl
+          echo "AIDL sürümü:"
           aidl --version
 
       - name: Python paketlerini kur
