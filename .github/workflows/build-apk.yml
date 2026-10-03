@@ -55,24 +55,42 @@ jobs:
             "platforms;android-35" \
             "build-tools;35.0.0"
 
-      - name: Android SDK PATH ayarla
+      - name: AIDL'i bul ve PATH'e ekle
+        shell: bash
         run: |
-          echo "$ANDROID_HOME/cmdline-tools/latest/bin" >> "$GITHUB_PATH"
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT"
+
+          echo "AIDL aranıyor..."
+
+          AIDL_PATH=$(find "$ANDROID_HOME" -type f -name aidl 2>/dev/null | head -n 1)
+
+          if [ -z "$AIDL_PATH" ]; then
+            echo "AIDL bulunamadı!"
+            find "$ANDROID_HOME" -maxdepth 5 -type f | grep -E '/aidl$' || true
+            exit 1
+          fi
+
+          echo "AIDL bulundu: $AIDL_PATH"
+
+          AIDL_DIR=$(dirname "$AIDL_PATH")
+
+          echo "AIDL klasörü: $AIDL_DIR"
+
+          echo "$AIDL_DIR" >> "$GITHUB_PATH"
           echo "$ANDROID_HOME/platform-tools" >> "$GITHUB_PATH"
-          echo "$ANDROID_HOME/build-tools/35.0.0" >> "$GITHUB_PATH"
+
+      - name: Android araçlarını kontrol et
+        shell: bash
+        run: |
+          echo "PATH=$PATH"
+          echo "AIDL:"
+          which aidl
+          aidl --version
 
       - name: Android lisanslarını kabul et
         run: |
           yes | sdkmanager --licenses || true
-
-      - name: Android araçlarını kontrol et
-        run: |
-          echo "ANDROID_HOME=$ANDROID_HOME"
-          echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT"
-          which adb || true
-          which aidl || true
-          aidl --version || true
-          sdkmanager --version
 
       - name: Python paketlerini kur
         run: |
