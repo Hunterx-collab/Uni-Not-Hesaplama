@@ -9,16 +9,28 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
 
     steps:
       - name: Repository'yi indir
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Python 3.12 kur
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.12"
+
+      - name: Java 17 kur
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Java sürümünü kontrol et
+        run: |
+          java -version
+          echo "JAVA_HOME=$JAVA_HOME"
+          which java
 
       - name: Sistem paketlerini kur
         run: |
@@ -27,7 +39,6 @@ jobs:
             git \
             zip \
             unzip \
-            openjdk-17-jdk \
             autoconf \
             automake \
             libtool \
@@ -40,20 +51,24 @@ jobs:
             libssl-dev
 
       - name: Android SDK kurulumu
-        uses: android-actions/setup-android@v3
+        uses: android-actions/setup-android@v4
 
-      - name: Android SDK paketlerini kur
+      - name: Android SDK araçlarını kur
         run: |
-          sdkmanager "platform-tools"
-          sdkmanager "platforms;android-35"
-          sdkmanager "build-tools;35.0.0"
-          sdkmanager "cmdline-tools;latest"
+          sdkmanager --install \
+            "platform-tools" \
+            "platforms;android-35" \
+            "build-tools;35.0.0"
 
-      - name: Buildozer kur
+      - name: Android lisanslarını kabul et
+        run: |
+          yes | sdkmanager --licenses || true
+
+      - name: Python paketlerini kur
         run: |
           python -m pip install --upgrade pip
           pip install buildozer
-          pip install cython==0.29.34
+          pip install "cython==0.29.34"
 
       - name: Buildozer spec oluştur
         run: |
